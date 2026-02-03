@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>2Spot</title>
+
+  <style>
+    :root{
+      --bg:#05060a;
+      --text:#e9ecff;
+      --muted:#a7b0d6;
+      --line:rgba(255,255,255,.10);
+      --max:1200px;
+
+      /* ✅ change highlight to rgb(255,142,0) */
+      --accent: rgb(255,142,0);
+
+      --navH:64px;
+      --pinTop:92px;
+
+      /* keep your window sizing */
+      --windowH: 52vh;
+      --windowH_m: 66vh;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background:var(--bg);
+      color:var(--text);
+      overflow-x:hidden;
+    }
+
+    /* NAV */
+    .nav{
+      position:fixed; top:0; left:0; right:0;
+      height:var(--navH);
+      z-index:50;
+      background:rgba(0,0,0,.75);
+      backdrop-filter:blur(10px);
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .nav-inner{
+      max-width:var(--max);
+      margin:0 auto;
+      height:100%;
+      padding:0 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+    .nav-left{
+      display:flex;
+      align-items:center;
+      gap:18px;
+      min-width:0;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      text-decoration:none;
+      color:#fff;
+      font-weight:900;
+      white-space:nowrap;
+    }
+    .brand img{
+      width:100px;
+      height:auto;
+      object-fit:contain;
+    }
+    .nav-links{
+      display:flex;
+      gap:16px;
+      overflow:auto;
+      scrollbar-width:none;
+    }
+    .nav-links::-webkit-scrollbar{ display:none; }
+
+    .nav-link{
+      color:rgba(255,255,255,.75);
+      text-decoration:none;
+      font-size:13px;
+      font-weight:800;
+      letter-spacing:.08em;
+      padding:8px 10px;
+      border-radius:10px;
+      text-transform:uppercase;
+      white-space:nowrap;
+      transition:.15s ease;
+      cursor:pointer;
+    }
+    .nav-link.active{ color:var(--accent); }
+    .nav-link:hover{ background:rgba(255,255,255,.06); color:#fff; }
+
+    .nav-right{
+      display:flex;
+      gap:10px;
+      flex-shrink:0;
+      align-items:center;
+    }
+    .store-btn{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
+      color:#fff;
+      text-decoration:none;
+      font-size:12px;
+      font-weight:800;
+      white-space:nowrap;
+      transition:.15s ease;
+    }
+
+    /* ✅ mobile hamburger button (hidden on desktop) */
+    .menu-btn{
+      display:none;
+      width:44px;
+      height:44px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
+      cursor:pointer;
+      align-items:center;
+      justify-content:center;
+      padding:0;
+    }
+    .menu-btn svg{ display:block; }
+
+    .wrap{ padding-top:var(--navH); }
+
+    /* STORY */
+    .story{ padding-top:40px; } /* height set by JS */
+
+    .pin{
+      position:sticky;
+      top:var(--pinTop);
+      height:calc(100vh - 120px);
+      max-width:var(--max);
+      margin:0 auto;
+      border-radius:24px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.10);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 30px 120px rgba(0,0,0,.6);
+      overflow:hidden;
+    }
+
+    .window{
+      width:95%;
+      height: var(--windowH);
+      background:rgba(0,0,0,.45);
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.12);
+      overflow:hidden;
+      position:relative;
+    }
+
+    .window-bar{
+      height:46px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.14em;
+      color:rgba(255,255,255,.7);
+      text-transform:uppercase;
+    }
+
+    .slides{
+      position:absolute;
+      inset:46px 0 0 0;
+    }
+
+    .slide{
+      position:absolute;
+      inset:0;
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:24px;
+      padding:32px;
+      opacity:0;
+      transform:translateY(30px) scale(.985);
+      pointer-events:none;
+      will-change: transform, opacity;
+    }
+
+    /* ensure something is visible even before JS runs */
+    .slide:first-child{
+      opacity:1;
+      transform:translateY(0) scale(1);
+      pointer-events:auto;
+    }
+
+    .left{
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      gap:12px;
+      min-width:0;
+    }
+    .kicker{
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.26em;
+      color:rgba(255,255,255,.6);
+      text-transform:uppercase;
+    }
+    .title{
+      font-size:42px;
+      margin:0;
+      line-height:1.05;
+      letter-spacing:-0.02em;
+    }
+    .desc{
+      color:rgba(255,255,255,.75);
+      max-width:44ch;
+      line-height:1.6;
+      margin:0;
+    }
+
+    .right{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .card-image{
+      width:92%;
+      height:auto;
+      max-height:92%;
+      object-fit:contain;
+      border-radius:14px;
+      filter:
+        drop-shadow(0 18px 45px rgba(0,0,0,.75))
+        drop-shadow(0 0 18px rgba(255,255,255,.12));
+    }
+
+    /* your image tweaks */
+    .img2{
+      width:100%;
+      max-height:100%;
+      transform: translateY(35px) translateX(-20px);
+    }
+
+    .img3{
+      width:100%;
+      max-height:100%;
+      transform: translateY(10px) translateX(-20px);
+    }
+    .img4{
+      width:120%;
+      max-height:100%;
+      transform: translateY(-70px);
+    }
+
+    /* ✅ MOBILE SLIDE-IN MENU (right side) */
+    .drawer-overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.55);
+      backdrop-filter: blur(2px);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .2s ease;
+      z-index:60;
+    }
+    .drawer{
+      position:fixed;
+      top:0;
+      right:0;
+      height:100vh;
+      width:min(86vw, 360px);
+      background:rgba(0,0,0,.85);
+      border-left:1px solid rgba(255,255,255,.10);
+      transform:translateX(110%);
+      transition:transform .24s ease;
+      z-index:70;
+      padding:22px 18px;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+    .drawer-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding-top:10px;
+    }
+    .drawer-logo{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .drawer-logo img{
+      width:110px;
+      height:auto;
+      object-fit:contain;
+    }
+    .drawer-close{
+      width:44px;
+      height:44px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:0;
+    }
+
+    .drawer-links{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      margin-top:6px;
+    }
+    .drawer-link{
+      color:rgba(255,255,255,.85);
+      text-decoration:none;
+      font-weight:900;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      font-size:18px;
+      padding:10px 8px;
+      border-radius:12px;
+      cursor:pointer;
+    }
+    .drawer-link.active{ color:var(--accent); }
+    .drawer-link:hover{ background:rgba(255,255,255,.06); }
+
+    .drawer-footer{
+      margin-top:auto;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding-bottom:18px;
+    }
+    .drawer-store{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      height:56px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.06);
+      color:#fff;
+      text-decoration:none;
+      font-weight:900;
+      letter-spacing:.02em;
+    }
+
+    /* open state */
+    body.drawer-open .drawer-overlay{
+      opacity:1;
+      pointer-events:auto;
+    }
+    body.drawer-open .drawer{
+      transform:translateX(0);
+    }
+
+    @media (max-width:900px){
+      .slide{ grid-template-columns:1fr; }
+      .window{ height: var(--windowH_m); }
+
+      /* ✅ mobile: keep only logo left, show hamburger right */
+      .nav-links{ display:none; }
+      .nav-right .store-btn{ display:none; }
+      .menu-btn{ display:inline-flex; }
+    }
+  </style>
+</head>
+
+<body>
+<header class="nav">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a class="brand" href="#" id="homeBtn">
+        <img src="assets/logo.png" alt="2Spot">
+      </a>
+
+      <nav class="nav-links">
+        <a class="nav-link active" href="#story" data-slide="0">APP</a>
+        <a class="nav-link" href="#story" data-slide="1">SPOTS</a>
+        <a class="nav-link" href="#story" data-slide="2">MAP</a>
+        <a class="nav-link" href="#story" data-slide="3">GARAGE</a>
+      </nav>
+    </div>
+
+    <div class="nav-right">
+      <a class="store-btn" href="#"> App Store</a>
+      <a class="store-btn" href="#">▶ Google Play</a>
+
+      <!-- ✅ mobile hamburger -->
+      <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M4 7h16M4 12h16M4 17h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ✅ mobile drawer + overlay -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-top">
+    <div class="drawer-logo">
+      <img src="assets/logo.png" alt="2Spot">
+    </div>
+    <button class="drawer-close" id="drawerClose" aria-label="Close menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M6 6l12 12M18 6L6 18" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <nav class="drawer-links">
+    <a class="drawer-link active" href="#story" data-slide="0">APP</a>
+    <a class="drawer-link" href="#story" data-slide="1">SPOTS</a>
+    <a class="drawer-link" href="#story" data-slide="2">MAP</a>
+    <a class="drawer-link" href="#story" data-slide="3">GARAGE</a>
+  </nav>
+
+  <div class="drawer-footer">
+    <a class="drawer-store" href="#">Google Play</a>
+    <a class="drawer-store" href="#">App Store</a>
+  </div>
+</aside>
+
+<main class="wrap">
+  <section class="story" id="story">
+    <div class="pin">
+      <div class="window">
+        <div class="window-bar" id="barTitle">2SPOT — APP</div>
+
+        <div class="slides" id="slides">
+          <!-- SLIDE 1 -->
+          <div class="slide" data-title="2SPOT — APP">
+            <div class="left">
+              <div class="kicker">COMING SOON</div>
+              <h2 class="title">2SPOT</h2>
+              <p class="desc">Find cars, events and people who actually care about cars.</p>
+            </div>
+            <div class="right">
+              <img class="card-image" src="assets/image1.png" alt="Home">
+            </div>
+          </div>
+
+          <!-- SLIDE 2 -->
+          <div class="slide" data-title="2SPOT — SPOTS">
+            <div class="left">
+              <div class="kicker">discover</div>
+              <h2 class="title">Spotted a Car?</h2>
+              <p class="desc">Snap it and post it on the spot.</p>
+            </div>
+            <div class="right">
+              <img class="card-image img2" src="assets/image2.png" alt="Spots">
+            </div>
+          </div>
+
+          <!-- SLIDE 3 -->
+          <div class="slide" data-title="2SPOT — MAP">
+            <div class="left">
+              <div class="kicker">join</div>
+              <h2 class="title">Drive & Meet</h2>
+              <p class="desc">Find drives and meets worth showing up for.</p>
+            </div>
+            <div class="right">
+              <img class="card-image img3" src="assets/image3.png" alt="Events">
+            </div>
+          </div>
+
+          <!-- SLIDE 4 -->
+          <div class="slide" data-title="2SPOT — GARAGE">
+            <div class="left">
+              <div class="kicker">build</div>
+              <h2 class="title">Your Garage</h2>
+              <p class="desc">Best place to showcase your cars, specs and photos.</p>
+            </div>
+            <div class="right">
+              <img class="card-image img4" src="assets/image4.png" alt="Garage">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  const story = document.getElementById("story");
+  const slides = [...document.querySelectorAll(".slide")];
+
+  const navLinks = [...document.querySelectorAll(".nav-link")];
+  const drawerLinks = [...document.querySelectorAll(".drawer-link")];
+
+  const barTitle = document.getElementById("barTitle");
+  const homeBtn = document.getElementById("homeBtn");
+
+  // drawer elements
+  const menuBtn = document.getElementById("menuBtn");
+  const drawer = document.getElementById("drawer");
+  const drawerOverlay = document.getElementById("drawerOverlay");
+  const drawerClose = document.getElementById("drawerClose");
+
+  // shorter scroll length (tune)
+  const scrollPerSlideVH = 90;
+
+  // no early overlap: fade only at end of each segment
+  const transitionPart = 0.20;
+
+  function clamp(n,min,max){ return Math.max(min,Math.min(max,n)); }
+
+  function resizeTrack(){
+    story.style.height = (slides.length * scrollPerSlideVH + 60) + "vh";
+  }
+
+  function setActiveNav(index){
+    navLinks.forEach(a => a.classList.toggle("active", Number(a.dataset.slide) === index));
+    drawerLinks.forEach(a => a.classList.toggle("active", Number(a.dataset.slide) === index));
+  }
+
+  function applyState(a, b, local){
+    slides.forEach((s, i) => {
+      let op = 0;
+      let y = 30;
+
+      if (i === a) { op = 1 - local; y = 30 * local; }
+      else if (i === b) { op = local; y = 30 * (1 - local); }
+
+      s.style.opacity = op.toFixed(3);
+      s.style.transform = `translateY(${y}px) scale(${0.985 + op * 0.015})`;
+      s.style.pointerEvents = op > 0.6 ? "auto" : "none";
+    });
+  }
+
+  function onScroll(){
+    const rect = story.getBoundingClientRect();
+    const vh = window.innerHeight;
+
+    const total = rect.height - vh;
+    const scrolled = -rect.top;
+    const t = total > 0 ? clamp(scrolled / total, 0, 1) : 0;
+
+    const N = slides.length;
+    const seg = 1 / N;
+
+    let segIndex = Math.floor(t / seg);
+    segIndex = clamp(segIndex, 0, N - 1);
+
+    const segStart = segIndex * seg;
+    const segT = clamp((t - segStart) / seg, 0, 1);
+
+    const fadeStart = 1 - transitionPart;
+    const local = segT < fadeStart ? 0 : (segT - fadeStart) / transitionPart;
+
+    const a = segIndex;
+    const b = Math.min(a + 1, N - 1);
+
+    if (t === 0){
+      applyState(0, 1, 0);
+      barTitle.textContent = slides[0].dataset.title;
+      setActiveNav(0);
+      return;
+    }
+
+    applyState(a, b, local);
+    const titleIndex = (local > 0.25) ? b : a;
+    barTitle.textContent = slides[titleIndex].dataset.title;
+    setActiveNav(titleIndex);
+  }
+
+  function scrollToSlide(index){
+    const N = slides.length;
+    const targetT = (index / N);
+
+    const storyTop = story.getBoundingClientRect().top + window.scrollY;
+    const totalScrollable = story.offsetHeight - window.innerHeight;
+
+    const NAV_OFFSET = 0;
+    const y = storyTop + (targetT * totalScrollable) - NAV_OFFSET;
+
+    window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+  }
+
+  // desktop nav click
+  navLinks.forEach(a => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      scrollToSlide(Number(a.dataset.slide));
+    });
+  });
+
+  // drawer nav click
+  drawerLinks.forEach(a => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      scrollToSlide(Number(a.dataset.slide));
+      closeDrawer();
+    });
+  });
+
+  homeBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    scrollToSlide(0);
+    closeDrawer();
+  });
+
+  function openDrawer(){
+    document.body.classList.add("drawer-open");
+  }
+  function closeDrawer(){
+    document.body.classList.remove("drawer-open");
+  }
+
+  menuBtn.addEventListener("click", openDrawer);
+  drawerOverlay.addEventListener("click", closeDrawer);
+  drawerClose.addEventListener("click", closeDrawer);
+
+  // escape to close
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeDrawer();
+  });
+
+  window.addEventListener("scroll", onScroll, { passive:true });
+  window.addEventListener("resize", () => { resizeTrack(); onScroll(); });
+
+  resizeTrack();
+  onScroll();
+</script>
+</body>
+</html>
